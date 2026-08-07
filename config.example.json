@@ -1,0 +1,24 @@
+{
+    "accounts": [
+        {
+            "name": "示例账号",
+            "enabled": true,
+            "cookie": "粘贴你的完整Cookie到这里",
+            "games": ["崩坏3", "原神", "崩坏：星穹铁道", "绝区零"]
+        }
+    ],
+    "smtp": {
+        "_comment": "QQ邮箱 SMTP 配置 (推荐)",
+        "host": "smtp.qq.com",
+        "port": 465,
+        "user": "你的QQ邮箱@qq.com",
+        "password": "QQ邮箱SMTP授权码(非密码)",
+        "to": "接收通知的邮箱"
+    },
+    "push": {
+        "_comment": "推送通知（可选，三选一或都填）",
+        "server_chan_key": "",
+        "pushplus_token": "",
+        "wecom_bot_key": ""
+    }
+}
