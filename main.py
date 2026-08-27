@@ -333,6 +333,7 @@ def build_email_body(state: CheckinState, mode: str) -> str:
         "full": "🟢 主力签到 (08:00)",
         "retry": "🟡 补签 (10:00)",
         "check": "🔴 看门狗告警 (12:00)",
+        "backup": "🛟 兜底补签 (14:00)",
     }
     label = mode_labels.get(mode, mode)
 
@@ -514,8 +515,8 @@ def get_smtp_config(config: dict) -> dict:
 def main():
     parser = argparse.ArgumentParser(description="米游社多游戏自动签到")
     parser.add_argument(
-        "--mode", choices=["full", "retry", "check"], default="full",
-        help="full=主力签到 | retry=补签 | check=看门狗检查",
+        "--mode", choices=["full", "retry", "check", "backup"], default="full",
+        help="full=主力签到 | retry=补签 | check=看门狗检查 | backup=兜底补签(14:00)",
     )
     parser.add_argument(
         "--no-email", action="store_true", help="禁用邮件通知"
@@ -529,7 +530,7 @@ def main():
     state.today = now.strftime("%Y-%m-%d")
 
     logger.info("=" * 50)
-    mode_labels = {"full": "主力签到", "retry": "补签", "check": "看门狗检查"}
+    mode_labels = {"full": "主力签到", "retry": "补签", "check": "看门狗检查", "backup": "兜底补签"}
     logger.info(f"米游社签到 [{mode_labels.get(mode, mode)}] {now.strftime('%Y-%m-%d %H:%M')}")
     logger.info("=" * 50)
 
@@ -586,6 +587,27 @@ def main():
 
         if push_config:
             send_push(all_messages, push_config)
+
+    elif mode == "backup":
+        # 兜底模式（14:00）：早上 schedule 漏跑时补签；全部已签则静默不打扰
+        has_new = any(r["action"] == "signed" for r in state.results)
+        has_fail = any(r["action"] == "failed" for r in state.results)
+        if has_fail:
+            if not args.no_email:
+                smtp_config = get_smtp_config(config)
+                if smtp_config.get("user") and smtp_config.get("password"):
+                    body = build_email_body(state, "backup")
+                    send_email(smtp_config, f"⚠️ 米游社兜底检查异常 {state.today}", body)
+            send_push(all_messages, push_config, "⚠️ ")
+        elif has_new:
+            if not args.no_email:
+                smtp_config = get_smtp_config(config)
+                if smtp_config.get("user") and smtp_config.get("password"):
+                    body = build_email_body(state, "backup")
+                    send_email(smtp_config, f"🛟 米游社兜底补签完成 {state.today}", body)
+            send_push(all_messages, push_config, "🛟 ")
+        else:
+            logger.info("兜底检查: 今日已全部签到，静默")
 
     logger.info("签到完成!")
 
