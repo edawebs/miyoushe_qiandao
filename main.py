@@ -23,13 +23,23 @@ import smtplib
 import sys
 import time
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from typing import Optional
 
 import requests
+
+# GitHub Actions runner 时区为 UTC，统一换算为北京时间（UTC+8）后再记录与判断"今天"，
+# 否则凌晨 0-8 点运行时会误判成前一天。注意：DS 签名用的是 time.time() 时间戳
+# （与时区无关），不要改动。
+CST = timezone(timedelta(hours=8))
+
+
+def now_cst():
+    """当前北京时间。状态写入与跨天判断必须共用此函数，保持一致。"""
+    return datetime.now(CST)
 
 # ============== 路径 ==============
 SCRIPT_DIR = Path(__file__).parent
@@ -227,7 +237,7 @@ class CheckinState:
                    for r in self.results)
 
     def save(self):
-        self.timestamp = datetime.now().isoformat()
+        self.timestamp = now_cst().isoformat()
         STATE_FILE.write_text(
             json.dumps(self.__dict__, ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -283,7 +293,7 @@ def send_push(messages: list[str], push_config: dict, title_prefix: str = ""):
         return
 
     msg_text = "\n".join(messages)
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = now_cst().strftime("%Y-%m-%d")
     title = f"{title_prefix}米游社签到 {today}"
 
     # Server酱
@@ -524,7 +534,7 @@ def main():
     args = parser.parse_args()
 
     mode = args.mode
-    now = datetime.now()
+    now = now_cst()
     state = CheckinState()
     state.mode = mode
     state.today = now.strftime("%Y-%m-%d")
