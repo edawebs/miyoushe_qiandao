@@ -1,9 +1,9 @@
-# 补签 — 每天北京时间 10:00 执行
-name: "补签 10:00"
+# 补签 — 每天北京时间 10:37 执行
+name: "补签 10:37"
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    - cron: '37 2 * * *'   # UTC 02:37 = 北京时间 10:37
   workflow_dispatch:
 
 jobs:
