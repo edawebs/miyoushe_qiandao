@@ -1,0 +1,42 @@
+# 跨仓库健康巡检 — 每天北京时间 21:30 执行
+#
+# 为什么放在米游社仓库：本仓库不是 Fork，Actions 不会被 GitHub 的
+# "Fork 工作流清理" 波及，因此可以长期稳定地从外部核验另外两个仓库。
+# 2026-10-15/16 贴吧仓库（Fork）被 GitHub 清理工作流后连续两天静默停摆，
+# 而它自己的看门狗也跑不起来 —— 该场景只有"跨仓库"的监控才能兜住。
+#
+# 时点选择：21:30（北京时间）
+#   · 三个仓库当天的正常运行最晚 14:19 就已排定，即便延迟数小时也已结束；
+#   · 又留出足够时间：若此时发现异常，当天 24:00 前仍可补救（巡检每小时 :07/:37 会补签）。
+name: "跨仓库巡检 21:30"
+
+on:
+  schedule:
+    - cron: '30 13 * * *'   # UTC 13:30 = 北京时间 21:30
+  workflow_dispatch:
+
+jobs:
+  cross-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: pip install requests
+
+      - name: 跨仓库巡检（异常时发告警邮件并标红）
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_TO: ${{ secrets.SMTP_TO }}
+        run: python cross_check.py
