@@ -14,6 +14,11 @@ on:
   schedule:
     - cron: '30 13 * * *'   # UTC 13:30 = 北京时间 21:30
   workflow_dispatch:
+    inputs:
+      self_test:
+        description: '发送一封测试告警邮件（仅验证邮件通道，可忽略）'
+        type: boolean
+        default: false
 
 jobs:
   cross-check:
@@ -39,4 +44,4 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           SMTP_TO: ${{ secrets.SMTP_TO }}
-        run: python cross_check.py
+        run: python cross_check.py ${{ inputs.self_test && '--self-test' || '' }}
