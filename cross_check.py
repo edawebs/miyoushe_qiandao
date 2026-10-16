@@ -200,9 +200,12 @@ def main() -> int:
     body = build_body(issues, notes, stamp, today)
     print(body)
     prefix = "🧪 [自检]" if self_test else "🚨 [跨仓库巡检]"
-    send_mail(f"{prefix} 签到异常 {today}", body)
+    sent = send_mail(f"{prefix} 签到异常 {today}", body)
+    if self_test:
+        # 自检的唯一目的就是验证邮件通道，发不出去必须报错，否则自检形同虚设
+        return 0 if sent else 1
     # 异常时非零退出，让 run 在 Actions 页面标红，多一重可见性
-    return 0 if self_test else 1
+    return 1
 
 
 if __name__ == "__main__":
